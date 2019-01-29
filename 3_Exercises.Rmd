@@ -1,0 +1,59 @@
+---
+title: "Visualizations and reports"
+date: "31/1/2019"
+author: "Jure Demsar and Gregor Pirs"
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    toc: yes
+    highlight: github
+---
+
+<div style="text-align:center">
+  <img src="../bstatcomp.png" alt="drawing" width="128"/>
+</div>
+
+
+# Exercise 1
+
+Read the player_wage.csv data
+(source: https://www.kaggle.com/aishjun/nba-salaries-prediction-in-20172018-season#2017-18_NBA_salary.csv)
+and save it as a tibble. The observations in the
+data set are NBA players, their information (statistics, nationality,...), and
+their wages. For a glossary of NBA terms, see 
+https://www.basketball-reference.com/about/glossary.html.
+
+Peform following tasks:
+
+1. Create a tibble with only Slovenian players.
+2. Create a tibble with all USA players who play for Golden State Warriors (GWS).
+3. Arrange Players first by age, then by salary, both descending.
+4. Create a tibble with columns name, country, draft number, age, and team.
+5. Add a new variable to the data frame, minutes per game (MPG).
+6. Create a tibble with average salary per team descending.
+7. Create a tibble with average salary per country descending,
+8. Create a tibble with players from the USA, summarise the salary per minutes played, grouped by team (use the pipe!).
+9. Perform an exploratory analysis to find out how wages affect win score (WS). Win score is an estimate of the number of wins contributed by a player.
+
+```{r}
+  # your solution goes in here
+```
+
+
+# Exercise 2
+
+Load the temparture dataset and filter the data to temperatures in Slovenia. Categorize temperature measurements into 6 bins according to the year of the measurement: 1901-1920, 1921-1940, 1941-1960, 1961-1980, 1981-2000, 2001-2015. Use a bar chart to show how temperature moved during these time intervals for each month independenlty (hint: use facet grid).
+
+```{r}
+  # your solution goes in here
+```
+
+
+# Exercise 3
+
+Use exploratory visualizations to analyze how the knowledge of various programming languages, age and programming experience influence developer's salary. Also explore relationships between these variables -- is the number of known programming languages correlated with age, etc. Hint: You can plot each visualization independently or you can use the `cowplot` package to join multiple charts together.
+
+
+```{r}
+  # your solution goes in here
+```

@@ -1,0 +1,409 @@
+---
+title: "Visualizations and reports"
+date: "31/1/2019"
+author: "Jure Demsar and Gregor Pirs"
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    toc: yes
+    highlight: github
+---
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# import required libraries
+library(ggplot2)
+library(dplyr)
+```
+
+<div style="text-align:center">
+  <img src="../bstatcomp.png" alt="drawing" width="128"/>
+</div>
+
+
+# Data visualization with ggplot2
+
+
+## Types of data
+
+The most suitable visualization is usually determined by the type of data we are visualizing. Broadly speaking there are four types of data (four measurement scales): nominal, ordinal, interval and ratio.
+
+Nominal scales are used for data without any quantitative values. Nominal scales are also called labels, since they only label (name) the data and do not have any numerical singnificance. As such nominal scales do not determine any ordering to underlying data. Examples of nominal data are sex (male/female), colors (red, green, blue), etc.
+
+Ordinal scales provide some kind of ordering to the data, but differences and ratios between categories are not defined. For example, an ordinal scale of happiness could consist of the following categories: very unhappy, unhappy, neutral, happy, very happy. We can say that a person that is very happy is feeling better than a person that is happy, but we cannot say whether the difference between happy and very happy is the same as the difference between neutral and happy. Ordinal scales are usually measuring non-numeric concepts like satisfaction, happiness, etc.
+
+Interval scales are numeric and determine both the order and the difference between values. A typical example of an interval scale is temperature -- the difference between 10°C and 20°C is the same as between 20°C and 30°C and 10°C is smaller than 20°C. Another example of an interval scale is time, another measure where the increments are known, consistent, and measurable. Interval scales allow several statistical operations that cannot be conducted (or are questionable) on nominal and ordinal scales, such as mean, median, mode, standard deviation, etc. The main problem with interval scales is that they do not have a true zero, the value of zero doesn’t mean the absence of value but is actually another number used on the scale. Because of this we cannot calculate ratios between scales. For example, we cannot say that 20°C is twice as hot as 10°C, or that 10°C is infinitely hotter than 0°C.
+
+The ratio scale is the most flexible scale, it tells us about the order of data, determines the exact difference between measurements and can be used for calculating ratios (since it has true zero). A typical example of ratio scale is weight, where weight of 0 kg denotes the absence of weight. Because of this ratio scales provide a plethora of possibilities when it comes to statistical analysis. Variables using the ratio scale can be meaningfully added, subtracted, divided and multiplied. We can also calculate standard summary metrics, such as mean, mode, median, standard deviation, variance, etc.
+
+
+## ggplot2
+
+The ggplot2 package is an extremely powerful tool for drawing all kinds of data visualizations. The ggplot2 package is build upon concepts described by Leland Wilkinson in his book Grammar of Graphics. Wilkinson defines data visualizations through seven layers:
+
+1. Data -- the actual variables to be plotted.
+2. Aesthetics (aes) -- the scales on which the data is mapped.
+3. Geometries (geoms) -- shapes that visually represent the data.
+4. Facets -- rows and columns for sub-plots.
+5. Statistics -- statistical models, functions and summaries.
+6. Coordinates -- the plotting space.
+7. Themes -- design elements, such as titles, labels, ticks, legends, etc.
+
+We will see how we build data visualizations with ggplot2 by stacking these layers on top of eachother through practical examples.
+
+
+## My first ggplot
+
+The foundation for each visualization are data, let us load some!
+
+```{r, warning=FALSE}
+  # load data
+  df_movies <- read.csv("./data/movies.csv", na.strings="")
+  movies <- as_tibble(df_movies)
+```
+
+Movies dataset contains information about 5043 movies, for each movie we have its director, main actors, year of the movie, spent budget, gross box-office income, etc. Let us create a line chart that shows how budget spent on movies influences its income. The bare minimum we have to do is: 1) tell ggplot which data we want to plot, 2) define aesthetic mapping (define how variables in the data are mapped to visual properties of charts) and 3) select a chart type. So we will use three layers defined by Wilkinson to achieve this -- the data layer, the aesthetics layer and the geometries layer.
+
+```{r, warning=FALSE}
+  # plot
+  ggplot(data=movies, aes(x=budget, y=gross)) +
+    geom_line()
+```
+
+Code above executes the three described steps. First, we tell ggplot that our data source will be `movies`, note here that plots expect data in the tidy format. The `aes()` function defines the aesthetic mapping, in the above example we simply map the `budget` variable to the x-axis and the `gross` variable to the y-axis. In ggplot2 chart types are defined through geometrics (geoms), for example `geom_line()` tells ggplot to draw a line chart. We can easily stack geoms together, doing so we can easily plot a line chart on top of a scatter plot (`geom_point()`). Geoms that appear later in our code are drawn on top of previous geoms.
+
+```{r, warning=FALSE}
+  # plot
+  ggplot(data=movies, aes(x=budget, y=gross)) +
+    geom_point() +
+    geom_line()
+```
+
+Urgh ... this looks like a mess, let us create something readable!
+
+
+## Scatter plot
+
+We wil draw only a scatter plot this time. To make it look better we will make the drawn points semi-transparent, larger and without border. To achieve this we can tune the parameters of `geom_point()`. The `alpha` parameter sets the transparency of points, value 0 means fully transparent, while 1 means non-transparent. The size parameter determines the size and the shape parameter the silhouette of points (see http://sape.inf.usi.ch/quick-reference/ggplot2/shape for available shapes).
+
+If you look at the chart above you can see that the majority of data lie only on a small portion of the x-axis. To focus on a particular portion of the axis we have to use functions from the coordinates layer of the grammar of graphics. To limit the x-axis we can use the `xlim(start, end)` function, `start` and `end` values define the visible range of the axis (for the y-axis we just use the `ylim()` function).
+
+To add a title to the chart we need to use commands for the themes layer. The appropriate function for adding a title is `ggtitle()`, the last line of the code below aligns the title to the middle of the plot and increases its font size.
+
+```{r, warning=FALSE}
+  # plot
+  ggplot(data=movies, aes(x=budget, y=gross)) +
+    geom_point(alpha=0.1, size=3, shape=16) +
+    xlim(0, 250000000) +
+    ggtitle("Movie income") +
+    theme(plot.title=element_text(hjust=0.5, size=22))
+```
+
+Aaah ... much better, this chart actually tells us some things. As you can see scatter plots are good for quick exploratory analysis when we are interested in how two variables are related with each other and how data are distributed. It seems like movies that cost more also earn more. We can add additional geoms to get a better feel of this relationship, for example `geom_smooth()` fits a line (straight or curved) to the data. We can also add a reference diagonal line (movies above the line made a profite while those below made a loss), the code below also makes the line a bit thicker, red and dotted. We can also add horizontal or vertical reference lines, for more information about reference lines see https://ggplot2.tidyverse.org/reference/geom_abline.html.
+
+```{r, warning=FALSE, messages=FALSE}
+  # plot
+  ggplot(data=movies, aes(x=budget, y=gross)) +
+    geom_point(alpha=0.1, size=3, shape=16) +
+    geom_smooth(method="lm") +
+    geom_abline(size=2, color="red", linetype="dotted") +
+    xlim(0, 250000000) +
+    ggtitle("Movie income") +
+    theme(plot.title=element_text(hjust=0.5, size=22))
+```
+
+We must be aware of an important thing going on in the background here, using `xlim()` actually drops a portion of the data that falls out of bounds. Since these data are dropped the line plotted by `geom_smooth` is not based on all data, but only on the visible data. If we want to use the whole data for calculating the smoothing line we need to limit our axis by using `geom_cartesian()` instead of `xlim()`. In this case data are only hidden and not dropped. It is hard to say what is right or wrong here, it all comes down to what we are trying to achieve. Just like in other aspects of science or professional work it is of paramount importance to justify our decisions and present our solutions in a transparent way.
+
+```{r, warning=FALSE, messages=FALSE}
+  # plot
+  ggplot(data=movies, aes(x=budget, y=gross)) +
+    geom_point(alpha=0.1, size=3, shape=16) +
+    geom_smooth(method="lm") +
+    coord_cartesian(xlim=c(0, 250000000)) +
+    ggtitle("Movie income") +
+    theme(plot.title=element_text(hjust=0.5, size=22))
+```
+
+
+## Line chart
+
+Line charts are useful for plotting ordered data and visualizing various trends (for example growth or decline of something through time). As such they are the most appropriate for drawing time series and continous data. Line charts are only appropraite when it makes sense to connect items lying on the axis, in the case below the x-axis contains years (1900, 1925, etc.). It is sensible to use line chart here because the step from 1900 to 1925 is not discrete, there are time points in between. It is a common mistake to use line charts on unconnected, discrete items, such as colors, countries, names, etc.
+
+```{r}
+  # load data
+  df_temperature <- read.csv("./data/temperature.csv", na.strings="", sep=";")
+  temperature <- as_tibble(df_temperature)
+  # get yearly averages for Slovenia
+  average_t_si <- temperature %>%
+    filter(country=="Slovenia") %>%
+    group_by(year) %>%
+    summarize(temperature=mean(temperature))
+  # plot
+  ggplot(data=average_t_si, aes(x=year, y=temperature)) +
+    geom_line(size=1) +
+    ylim(0, 12)
+```
+
+The temperature dataset contains data for two other countries as well. In Finland temperatures should be lower than over here, while in Niger they should be higher. Let's see how we can plot multiple lines on the same chart at the same time.
+
+```{r}
+  # get yearly averages per country
+  average_t <- temperature %>%
+    group_by(year,country) %>%
+    summarize(temperature=mean(temperature))
+  # plot
+  ggplot(data=average_t, aes(x=year, y=temperature, color=country)) +
+    geom_line(size=1)
+```
+
+This was easy! We just had to specify that we want to to use different color coding for each country. OK, now we want to do a couple of corrections to the chart:
+
+* for some reason we want to emphasize the data between 1975 and 2000,
+* change the position of the legend,
+* remove legend's title,
+* change the color pallete to something more readable,
+* remove y axis label
+* and change x axis label.
+
+```{r}
+  # plot
+  ggplot(data=average_t, aes(x=year, y=temperature, color=country)) +
+    annotate("rect", xmin = 1975, xmax = 2000, ymin = -Inf, ymax = Inf, alpha = 0.50, fill = "grey75") +
+    geom_line(size=1) +
+    ylim(-5, 35) +
+    scale_color_brewer(type="qual", palette=2) +
+    xlab("") +
+    ylab("T[°C]") +
+    theme(legend.position="bottom", legend.title=element_blank())
+```
+
+The code is pretty much self explanatory, we can emphasizing a certain portion of our visualization by drawing a dark grey rectangle via the `annotate()` function. We can also add text and line annotations with this function. In order to draw the lines over the rectangle, the `annotate()` function has to come before `geom_line()`. Next we used the color brewer to specify a palette, since we are interested in creating a large contrast between three lines we used a qualitative palette, we picked the pallete number 2 because we like it (feel free to change the number if you do not like current colors). With the `xlab()` and `ylab()` functions we can change the axis labels. The theme function amends various design elements of the graph (we could also change axis labels inside the theme function), here we moved the legend to the bottom of our visualization and removed its title. To remove the legend completely, set its position to `"none"`.
+
+## Facets
+
+Facets are its own layer in the grammar of graphics, they are used for splitting a single chart into several smaller sub-charts. With facets we can easily create a visualization conatining several smaller sub-graphs, for example we can show how temperature moved through time for each country during each month.
+
+```{r, fig.width=12, fig.height=6, warning=FALSE}
+  # plot
+  ggplot(data=temperature, aes(x=year, y=temperature)) +
+    geom_line(size=1) +
+    facet_grid(country ~ month) +
+    theme(panel.spacing = unit(1, "lines")) +
+    scale_x_continuous(breaks=c(1900, 2000)) +
+    ylim(-40, 40) +
+    xlab("") +
+    ylab("T[°C]")
+```
+
+The `facet_grid` parameter `country ~ month` means that sub-graphs will be plotted on a 2D grid -- countries will be distributed vertically (along the Y axis) and months will be distributed horizontally (along the X axis). If we want to split the chart using only one variable we put a dot for one of the dimensions (e.g. `country ~ .`).
+
+
+## Bar chart
+
+Another type of chart that we are all familiar with is the bar chart, it is good for ranking and comparing values of different groups and visualizing ratios between those values. The geom for plotting bar charts is called `geom_bar()`, in its default mode it is a bit different from previously used geoms. As you can see from the code below we only have to specify the variable that determines the groups that will be distributed along the x-axis, `geom_bar()` will then plot the count (number of values) that fall into each category.
+
+```{r, warning=FALSE}
+  # load data
+  df_salaries <- read.csv("./data/salaries.csv")
+  salaries <- as_tibble(df_salaries)
+  # plot
+  ggplot(data=salaries, aes(x=average_salary)) +
+    geom_bar() +
+    ylab("count") +
+    xlab("salary") +
+    theme(axis.text.x=element_text(angle=45, hjust=1)) +
+    ggtitle("Average developer salary in Slovenia") +
+    theme(plot.title=element_text(hjust=0.5, size=22))
+```
+
+To increase clarity of the plot and prevent labels on the x-axis from overlapping we rotated the labels for 45°.
+
+Another way to plot bar charts is by specifying both the x and y aesthetics, in this case we have to set the `stat` parmeter of the `geom_bar()` to `identity`. With this approach we usually visualize some summaries of the data (e.g. mean values), as you will see in the example below we have to be careful when doing this. We will plot a comparison between how men and women performen on a test.
+
+```{r, warning=FALSE}
+  # load data
+  df_scores <- read.csv("./data/scores.csv", sep="\t")
+  scores <- as_tibble(df_scores)
+  # summary statistics
+  scores_summary <- scores %>%
+    group_by(sex) %>%
+    summarise(mean = mean(score), 
+              se = sd(score) / sqrt(length(score)))
+  # plot
+  ggplot(data=scores_summary, aes(x=sex, y=mean)) +
+    geom_bar(stat="identity", width=0.5) +
+    geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1, size=1) +
+    ylab("score")
+```
+
+The `width` parameter of the `geom_bar()` defines width of plotted bars. To get some additional information about the underlying data we also plot error bars (`geom_errorbar()`), we plot them as +/- standard error. Juding from this visualization there is no significant difference in scores between female and male participants. Let us not jump to conclusions just yet and explore our data a bit more by adding a scatter plot on top of the bar chart.
+
+```{r, warning=FALSE}
+  # plot
+  ggplot(data=scores_summary, aes(x=sex, y=mean)) +
+    geom_bar(stat="identity", width=0.5) +
+    geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.1, size=1) +
+    geom_point(data=scores, aes(x=sex, y=score), position=position_jitter(width=0.2), alpha=0.5, size=3, shape=16) +
+    ylab("score") +
+    ggtitle("Friends don't let friends make bar plots.") +
+    theme(plot.title = element_text(hjust = 0.5, size=22))
+```
+
+There are a couple of new concepts here that should be explained here. First, you can see that we pass a different tibble into the `geom_point()` geometric, we do not use the data set in the `ggplot()` function. We have to do this because we are plotting summary statistics with bar plot and error bars and we want to plot the raw data with our scatter plot. This is great, as it means that we can define global data and plot those with each geometric, or we can plot different data with each geometric and thus visualize more information in a single chart. Next we set the `position` parameter to `position_jitter`, with this we spread the scatter plot along the horizontal axis a bit in order to prevent all points from being positioned on the same vertical line, with this we have a better insight into the distribution of scores.
+
+As you can see from the upgraded visualization concluding that men and women performed equally on the test is not correct. Female participants either did well or did bad, only a few women got an average score. With men the situation is different, it looks like their performances are spread out normally around the average score. We will take a look at some other plots that might be more suitable for plotting this kind of data.
+
+
+## Box plot
+
+You can think of the box plot as a bar chart with additional information. The mean value is shown with the horizontal line in the middle of the box, the box itself shows where the majority of the data lies (50% of the data lying between the first and third quartiles, $Q_1$ and $Q_3$). Whiskers denote extremes -- data not more than 1.5 IQR (inter quantile range) away from the first or third quartile, IQR is calculated as $Q_3 - Q_1$. Outliers are cases that lie even further out from these 1.5 IQR bounds.
+
+```{r, warning=FALSE}
+  # plot
+  ggplot(data=df_scores, aes(x=sex, y=score)) +
+    geom_boxplot() +
+    theme_minimal()
+```
+
+You can see that this chart's background and some other elements look differente, this is because we used a different theme here (`theme_minimal()`). There are several predefined themes you can choose from (see https://ggplot2.tidyverse.org/reference/ggtheme.html). Minimal theme is neat because it removes all the unnecessary visual noise.
+
+
+## Plotting distributions
+
+There are even more suitable visualization for plotting distributions. Below are examples for a density plot (`geom_density()`), which is suitable for continous variables and a histogram (`geom_histogram()`) where we can stash values together into bins, number of bins is defined through the `bins` parameter.
+
+```{r, warning=FALSE}
+  # plot
+  ggplot(data=df_scores, aes(x=score, fill=sex)) +
+    geom_density(color=NA, alpha=0.6) +
+    scale_fill_brewer(type = "qual", palette=2)
+```
+
+```{r, warning=FALSE, message=FALSE}
+  # plot
+  ggplot(data=df_scores, aes(x=score)) +
+    geom_histogram(bins=20) +
+    facet_grid(sex ~ .)
+```
+
+
+# RMarkdown
+
+RMarkdown is an elegant way for writing reports or scientific papers. The best thing about RMarkdown that all your code for data analysis and visualizations in included in the report so your work is presented in a completely transparent fashion. Another great thing is that if your dataset changes or updates, you just change the data and re-knit the report. Knitting is the term used for compiling reports. The package for creatking RMarkdown reports is called `rmarkdown` and is usually already installed with RStudio.
+
+
+## Settings
+
+We start by providing some basic information about our report, such as the title of the report, its date and authors. We also have to define what kind of outputs we want to create. RMarkdown can output a huge amount of document types -- pdf, html, docx, pptx, etc. For the whole list see https://rmarkdown.rstudio.com/lesson-9.html.
+
+The code below should lie at the beginning of a RMarkdown document. In our case we will produce two output documents -- a pdf and a web page.
+
+```
+---
+title: "RMarkdown example"
+date: "31/1/2019"
+author: "Jure Demsar and Gregor Pirs"
+output:
+  pdf_document: default
+  html_document: default
+---
+```
+
+Default designs for documents are quite dull and unpolished, luckily there are several packages that offer nicer themes. One of them is `prettydoc`.
+
+
+```
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    toc: yes
+    highlight: github
+```
+
+## Headers
+
+To create titles for sections and subsections we can use several levels of headers.
+
+
+```
+# Header 1
+
+## Header 2
+
+### Header 3
+
+etc.
+
+```
+
+
+## Emphasizing 
+
+We can emphasize certain words in our text by putting them in a `rectangle` or making them **bold**. 
+
+```
+`rectangle`
+
+**bold**
+
+```
+
+
+## Lists
+
+We can also create lists. Both ordered
+
+1. Item 1,
+2. Item 2,
+3. Item 3
+
+and unordered
+
+* Item 1,
+* Item 2,
+* Item 3.
+
+Below is the code to achieve this:
+
+```
+1. Item 1
+2. Item 2
+3. Item 3
+
+* Item 1
+* Item 2
+* Item 3
+
+```
+
+
+## Code
+
+The most powerful part of RMarkdown is the ability to incoporate executable code directly into our reports. We start and end a code block with \`\`\`. Next we have to define the programming langauge that will be used in the code block, we will use R, but markdown supports also Python, SQL, Bash, Rcpp, Stan, JavaScript and CSS. We define the programming language in curly brackets just after the start of the code block, for example to use R code we would use \`\`\`{r}. Besides the programming language we have a number of switches that define what will be printed out in the knitted report:
+
+* `include = FALSE` prevents code and results from appearing in the finished file. R Markdown still runs the code in the chunk, and the results can be used by other chunks.
+* `echo = FALSE` prevents code, but not the results from appearing in the finished file. This is a useful way to embed figures.
+* `message = FALSE` prevents messages that are generated by code from appearing in the finished file.
+* `warning = FALSE` prevents warnings that are generated by code from appearing in the finished.
+
+By default all switched described above are set to TRUE. To print only results of the code and not the code itself we would start the code chunk with \`\`\`{r, echo = FALSE}
+
+
+## Equations
+
+There are two ways to include equations in our report. The first one are inline equations, this is useful for simple equations, for example $y = x^2$ can be printed by typing the code
+
+```
+$y = x^2$
+```
+
+The equation are written in LaTeX code, we start and end the inline equation with a single dollar sign (\$). For superscript we use the `^` sign, and for subscript the `_` sign.
+
+More complex equations are rendered separately from text, to achieve this type a double dollar sign (\$\$) at the beginning and at the end of an equation. We use this format for more complex equations, such as the Bayes' theorem:
+
+$$P(A \mid B) = \frac{P(B \mid A) \, P(A)}{P(B)}.$$
+
+The code for this equation is:
+```
+$$P(A \mid B) = \frac{P(B \mid A) \, P(A)}{P(B)}$$
+```
+

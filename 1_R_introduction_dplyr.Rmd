@@ -1,0 +1,727 @@
+---
+title: "Introduction to R and data wrangling with dplyr"
+date: "31/1/2019"
+author: "Jure Demsar and Gregor Pirs"
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    toc: yes
+    highlight: github
+---
+
+<div style="text-align:center">
+  <img src="../bstatcomp.png" alt="drawing" width="128"/>
+</div>
+
+
+# R and RStudio
+
+R (https://www.r-project.org/) is a free open-source software for statistical computing. The basic interface to R is via console, which is quite rigid. RStudio (https://www.rstudio.com) provides us with a better user interface and additional functionalities (R notebooks, RMarkdown,...). 
+
+Usually the graphical interface in RStudio is separated into four parts. Upper left part is used for scripts. These are R files (or similar) which include our code and represent the main building blocks of our programs. Lower left part is the console, equivalent to the basic console interface of R. Upper right part is dedicated to the environment and history. Lower right part shows our workspace, plots, packages, and help.
+
+To create a new script, go to File -> New File -> R Script. To run the code, highlight the desired part of the code and press Ctrl + Enter. Alternatively, you can run the code by clicking the run icon in the top-right corner of the script.
+
+To specify the working directory, use `setwd()` function, where you provide the working directory in parentheses. For example to set the working directory to `C:/Author` you would call
+
+```{r, eval=FALSE}
+setwd("C:/Author")
+```
+
+Note that R recognizes either a slash or double backslash in the path, but it does not recognize a single backslash, which is the default if you copy the path on a Slovenian computer.
+
+```{r, eval=FALSE}
+setwd("C:/Author") # OK
+setwd("C:\\Author") # OK
+setwd("C:\Author") # Not OK.
+```
+
+
+# Variables
+
+Variables are the main data type of every program. In R, we define the values of variables with the syntax `<-`. We do not need to initialize the type of the variable, as R predicts it. We denote strings with `""`. Comments are written with `#`. 
+
+Let's create some variables.
+
+```{r, error=TRUE}
+n            <- 20
+x            <- 2.7
+m            <- n # m gets value 20
+my_flag      <- TRUE
+student_name <- "Luka"
+student_name <- Luka # because there is no variable Luka this returns an error
+```
+
+By using the function `typeof()` we can check the type of a variable. 
+
+
+```{r}
+typeof(n)
+typeof(student_name)
+typeof(my_flag)
+```
+
+We can change the types of variables with as.type functions. The main types are **integer**, **double**, **character** (strings), and **logical**. Note that the type character is used for strings and we do not have a separate type for single characters.
+
+```{r, error=TRUE}
+typeof(as.integer(n))
+typeof(as.character(n))
+```
+
+To access the values of the variables, we use variable names.
+
+```{r error=TRUE}
+n
+m
+my_flag
+student_name
+```
+
+We can apply arithmetic operations on numerical variables.
+
+```{r}
+n + x
+n - x
+diff <- n - x # variable diff gets the difference between n and x
+diff
+n * x
+n / x
+x^2
+sqrt(x)
+n > 2 * n # logical is greater
+n == n # equals
+n == 2 * n
+n != n # not equals
+```
+
+We can concatenate strings with functions `paste()` and `paste0()`. The difference between these functions is that the first one forces a space between inputs, while the second one does not.
+
+```{r}
+paste(student_name, "is", n, "years old")
+paste0(student_name, "is", n, "years old")
+L_username <- paste0(student_name, n)
+```
+
+Function `paste()` can get an additional parameter `sep`, this defined which separator will be put between strings. If we want to find out more about a function, we can put a question mark before the function's name in the console, this will open the documentation for the function..
+
+```{r}
+?paste
+paste(student_name, "is", n, "years_old", sep = "_")
+```
+
+
+# Basic data structures
+
+
+## Vector
+
+Vectors are the most common data structure in R. They consist of several elements of the same type. We create them with the function `c()` (combine).
+
+```{r}
+student_ages  <- c(20, 23, 21)
+student_names <- c("Luke", "Jen", "Mike")
+passed        <- c(TRUE, TRUE, FALSE)
+```
+
+To access individual elements of vectors we use square brackets with the sequential number of the element that we want. **The indexing in R starts with 1**, as opposed to 0 (C++, Java,...).
+
+```{r}
+student_ages[2]
+student_names[2]
+passed[2]
+```
+To get the length of the vector use `length()`.
+
+```{r}
+length(student_names)
+```
+
+We can use element-wise arithmetic operations on vectors, and we can use the scalar product (`%*%`). Note that you have to be careful with vector lengths. For example, if we have an operation on two elements---in our case vectors---and they are not of the same length, the smaller one will start periodically repeating itself, until it reaches the size of the larger one. In that case, R will also print a warning message. 
+
+```{r error = TRUE}
+a <- c(1, 3, 5)
+b <- c(2, 2, 1)
+d <- c(6, 7)
+a + b
+a * b
+a + d # not the same length, d becomes (6, 7, 6)
+a + 2 * b
+a %*% b # scalar product
+a > b # logical relations between elements
+b == a
+```
+
+We often want to select only specific elements of a vector. There are several ways to do that---for example all of the calls below return the first two elements of vector `a`.
+
+```{r error = TRUE}
+a[c(TRUE, TRUE, FALSE)] # selection based on logical vector
+a[c(1,2)] # selection based on indexes
+a[a < 5] # selection based on a logical condition
+```
+
+We can also use several conditions. If we want both conditions to hold, we use and (`&`), if only one has to hold we use if (`|`). Note that only here we use only a single symbol for each, as opposed to some other programming languages that use two.
+
+```{r error = TRUE}
+a[a > 2 & a < 4]
+a[a < 2 | a > 4]
+```
+
+
+## Factor
+
+Factors can be considered more as a variable type, than a data structure. But since they are based on vectors, we will present them at this point.
+
+Factors are used for coding categorical variables which can only take a finite number of predetermined values. We can further divide categorical variables into nominal and ordinal. Nominal values don't have an ordering (for example car brand), while ordinal variables do (for example frequency---never, rarely, sometimes, often, always). Ordinal variables have an ordering but usually we can not assign values to them (for example sometimes is more than rarely, but we do not know how much more).
+
+In R we create factors with function `factor()`. When creating factors, we can determine in advance, which values the factor can take with the argument `levels`. If we then add a non-existing level to a factor variable, R turns it into NA.
+
+```{r error = TRUE}
+car_brand <- factor(c("Audi", "BMW", "Mercedes", "BMW"), ordered = FALSE)
+car_brand
+freq      <- factor(x       = NA,
+                    levels  = c("never","rarely","sometimes","often","always"),
+                    ordered = TRUE)
+freq[1:3] <- c("rarely", "sometimes", "rarely")
+freq
+freq[4]   <- "quite_often" # non-existing level, returns NA
+freq
+```
+
+
+## Matrix
+
+Two-dimensional generalizations of vectors are matrices. We create them with the function `matrix()`, where we have to provide the values and either the number of rows or columns. Additionally, the argument `byrow = TRUE` fills the matrix with provided elements by rows (default is by columns).
+
+```{r}
+my_matrix <- matrix(c(1, 2, 1,
+                      5, 4, 2),
+                    nrow  = 2,
+                    byrow = TRUE)
+my_matrix
+my_square_matrix <- matrix(c(1, 3,
+                             2, 3),
+                           nrow  = 2)
+my_square_matrix
+```
+
+To access individual elements we use square brackets, where we divide the dimensions by a comma.
+
+```{r}
+my_matrix[1,2] # first row, second column
+my_matrix[2, ] # second row
+my_matrix[ ,3] # third column
+```
+
+Some useful functions for matrices.
+
+```{r}
+nrow(my_matrix) # number of matrix rows
+ncol(my_matrix) # number of matrix columns
+dim(my_matrix) # matrix dimension
+t(my_matrix) # transpose
+diag(my_matrix) # the diagonal of the matrix as vector
+diag(1, nrow = 3) # creates a diagonal matrix
+det(my_square_matrix) # matrix determinant
+```
+
+We can also use arithmetic operations on matrices. Note that we have to be careful with matrix dimensions. For matrix multiplication, we use `%*%`
+
+```{r error = TRUE}
+my_matrix + 2 * my_matrix
+my_matrix * my_matrix # element-wise multiplication
+my_matrix %*% t(my_matrix) # matrix multiplication
+my_square_matrix %*% my_matrix
+my_matrix %*% my_square_matrix # wrong dimensions
+```
+
+We can also transform a matrix into a vector.
+
+```{r error = TRUE}
+my_vec <- as.vector(my_matrix)
+my_vec
+```
+
+
+## Array
+
+Multi-dimensional generalizations of matrices are arrays.
+
+```{r}
+my_array <- array(c(1, 2, 3, 4, 5, 6, 7, 8), dim = c(2, 2, 2))
+my_array[1, 1, 1]
+my_array[2, 2, 1]
+my_array[1, , ]
+dim(my_array)
+```
+
+
+## Data frame
+
+Data frames are the basic data structure used in R for data analysis.  It has the form of a table, where columns represent individual variables, and rows represent observations. They differ from matrices, as the columns can be of different types. We access elements the same way as in matrices.
+
+We can combine vectors into data frames with `data.frame()`. The function transforms variables of type character into factors by default. If we do not want that, we have to add an argument `stringsAsFactors = FALSE`. We can assign column names with the function `colnames()`.
+
+```{r}
+student_data           <- data.frame(student_names, student_ages, passed,
+                                     stringsAsFactors = FALSE)
+colnames(student_data) <- c("Name", "Age", "Pass")
+student_data
+```
+
+We can also assign column names directly, when creating a data frame.
+
+```{r}
+student_data <- data.frame("Name" = student_names, 
+                           "Age"  = student_ages, 
+                           "Pass" = passed)
+student_data
+```
+
+Like in vectors, we can access the elements in data frames (and matrices) with logical calls. Here we need to be careful if we are selecting rows or columns. To access specific columns, we can also use the name of the column preceded by `$`.
+
+```{r}
+student_data[ ,colnames(student_data) %in% c("Name", "Pass")]
+student_data[student_data$Pass == TRUE, ]
+student_data$Pass
+```
+
+
+## List
+
+Lists are very useful data structure, especially when we are dealing with different data sets and data structures. We can imagine a list as a vector, where each element can be of a different data tyoe For example, a list can have a vector stored on index 1, a matrix on index 2, and a data frame on index 3. Moreover, a list can be an element of a list and so on.
+
+```{r}
+first_list  <- list(student_ages, my_matrix, student_data)
+second_list <- list(student_ages, my_matrix, student_data, first_list)
+```
+
+We access the elements of a list with double square brackets.
+
+```{r}
+first_list[[1]]
+second_list[[4]]
+second_list[[4]][[1]] # first element of the fourth element of second_list
+```
+
+We can also apply `length()` to get the number of elements in the list.
+
+```{r}
+length(second_list)
+```
+
+To append to list, we use the call below.
+
+```{r}
+second_list[[length(second_list) + 1]] <- "add_me"
+second_list[[length(second_list)]] # check, what is on the last index
+```
+
+Additionally, we can name the elements of the list, and access them by name. For that we use the `names()` function.
+
+```{r}
+names(first_list) <- c("Age", "Matrix", "Data")
+first_list$Age
+```
+
+
+# Packages
+
+R is an open-source programming language and anyone can contribute to its development. Many packages exist that make our work in R easier. Additionally, some packages include methods which are implemented in other languages for efficiency (for example C++), these methods are then interfaced through R for seamless integration. An open-source repository CRAN consists of most packages that you are going to need. To install a specific package, we use the function `install.packages()`, or we can use R-Studio's UI. Once a package is installed, we can load it into our workspace with `library()`. We will get to know several useful packages during this workshop.
+
+```{r eval = FALSE}
+install.packages("stats") # install package
+library(stats) # load the package into workspace
+```
+
+
+# Data import {#bpod}
+
+We often encounter data in a csv (comma separated value) format. Different pacakges in R allow us to read data from csv, txt, xlsx, etc. formats. Here we will go through reading data from csv.
+
+Two functions allow us reading csv data, `read.csv` and `read.csv2` from the package `utils`. Note here that the `utils` package is usually preloaded so you do not have to load it with the `library()` function. Before we read the data, we need to check two things. First, what is the character that separates the columns (usually a comma). Second, if the data have a header (does the first row contain column names?). `read.csv()` assumes that comma is the separator and dot is used in decimal numbers. `read.csv2()` assumes that a semi-colon is the separator and a decimal comma. Both function allow the change of these default values by providing the corresponding arguments. Both also assume that we have a header. Both functions load the data into a data frame. 
+
+In our data folder, we have a csv file which contains association football statistics of several matches across Europe  (acquired from http://football-data.co.uk/data.php). The file contains the header and the separator is a comma. Function `head()` returns the first six rows of the data frame.
+
+```{r}
+library(utils)
+foot_data <- read.csv("./data/football.csv")
+head(foot_data)
+```
+
+The dot in the string represents current working directory. If, for example, we had a colon as the separator, a decimal point, and no header, we would use the following function.
+
+```{r eval = FALSE}
+foot_data <- read.csv("./data/football.csv", header = FALSE, sep = ":")
+```
+
+
+# Loops
+
+The most useful loop in R is the for loop. In the for loop we have to define a new variable, which will represent the iteration index of the loop. Then we have to define the values over which that variable will iterate. Often, these are sequential numbers. For example, let us add first 10 natural numbers.
+
+```{r}
+my_sum <- 0
+for (i in 1:10) { # 1:10 returns a vector of natural numbers between 1 and 10
+  my_sum <- my_sum + i
+}
+my_sum
+```
+
+We can achieve the same with a while loop.
+
+```{r}
+my_sum <- 0
+ind    <- 1
+while (ind <= 10) {
+  my_sum <- my_sum + ind
+  ind    <- ind + 1
+}
+my_sum
+```
+
+The values in a for loop do not have to be sequantial numbers.
+
+```{r}
+my_sum       <- 0
+some_numbers <- c(2, 3.5, 6, 100)
+for (i in some_numbers) {
+  my_sum <- my_sum + i
+}
+my_sum
+```
+
+For example, let us calculate the average number of goals for each league in our data set.
+
+```{r}
+divs <- unique(foot_data$Div) # returns unique values in the Div column
+for (div in divs) {
+  tmp_data   <- foot_data[foot_data$Div == div, ]
+  home_goals <- tmp_data$FTHG
+  away_goals <- tmp_data$FTAG
+  print(paste0("League: ", div, 
+               ", mean home goals: ", mean(home_goals), 
+               ", mean away goals: ", mean(away_goals)))
+}
+```
+
+
+# Functions
+
+Base R consists of several function intended for easier work with data, for example `length()`, `dim()`, `colnames()`,... We can extend the set of functions with packages. For example, package **stats** allows us to create statistical models with the use of a single function---for example the linear model `lm()`. Here we will present some useful functions, more complex functions will  follow in later chapters. Remember, if you want additional information about functions, we can call the name of the function in the console, where we add a question mark (for example `?length`).
+
+```{r}
+1:10 # special function that returns a sequence of numbers
+sum(1:10) # sum of first 10 natural numbers
+sum(c(3,5,6,3))
+rep(1, times = 5) # returns a vector of lenght 5, where all values are 1
+rep(c(1,2), times = 5) # returns a vector of length 5 where 1 and 2 are periodically changing
+seq(0, 2, by = 0.5) # vector from 0 to 2, by adding 0.5
+prod(1:10) # multiply first 10 numbers
+round(5.24)
+5^5 # square
+sqrt(16) # square root
+as.character(c(1,6,3)) # transforms a numerical vector to a character vector
+```
+
+We often want a summary of our data. We can get it with `summary()`. We can use it on vectors and on data frames. The returned values are dependent on the types of variables.
+
+```{r}
+summary(student_ages)
+summary(student_names)
+summary(passed)
+summary(car_brand)
+summary(freq)
+summary(student_data) # summary of the whole data frame
+```
+
+
+## Writing functions
+
+We can write our own functions with the `function()` function. In the brackets, we define the function's input parameters, and in curly brackets we define what the function does. We use `return()` to return values.
+
+```{r}
+sum_first_n_elements <- function (n) {
+  my_sum <- 0
+  for (i in 1:n) {
+    my_sum <- my_sum + i
+  }
+  return (my_sum)
+}
+sum_first_n_elements(10)
+```
+
+If we want that the function returns several different data structures, we use a list.For example, let us look at a function which gets a matrixas input, and returns its transpose and determinant.
+
+
+```{r}
+get_transpose_and_det <- function (mat) {
+  trans_mat <- t(mat)
+  det_mat   <- det(mat)
+  out       <- list("transposed"  = trans_mat,
+                    "determinant" = det_mat)
+  return (out)
+}
+mat_vals <- get_transpose_and_det(my_square_matrix)
+mat_vals$transposed
+mat_vals$determinant
+```
+
+## Other useful functions for data summarizing
+
+There are several functions that are useful when working with data. We already mentioned the `summary()` function. Let's look at some other functions.
+
+To generate random numbers we can use a variety of random number generators. Which one we select depends on the data that we wish to generate. Usually, we want to be able to replicate our analysis exactly, therefore we recommend the use of a seed---this will generate the same random numbers everytime you use random generators. There is a function for that in R called `set.seed()`.
+
+```{r}
+set.seed(0)
+norm_dat  <- rnorm(1000, 5, 6) # generate 1000 samples from the normal
+                               # distribution with mean 5 and standard deviation 6
+count_dat <- rpois(2000, 8) # generate 2000 samples from the Poisson
+                            # distribution with mean 8
+unif_dat  <- runif(1000, -2, 5) # generate 1000 samples from the uniform
+                                # distribution from -2 to 5
+```
+
+In data science, we often work with statistics, so let's look at some functions which provide us with meaningful information about our data.
+
+```{r}
+mean(norm_dat)
+var(norm_dat) # variance
+sd(norm_dat) # standard deviation
+max(norm_dat) # maximum
+min(norm_dat) # minimum
+quantile(norm_dat) # calculates 5 quantiles of the data
+```
+
+We often want to standardize the data, before doing any analysis. We can do that manually, or we can use R's `scale()` function.
+
+```{r}
+st_dat <- scale(norm_dat)
+mean(st_dat)
+var(st_dat)
+```
+
+
+# Debugging
+
+For the debugging in R we will use the `browser()` function. It stops the execution of the code and you can access the variables in the environment atthe moment that browser was called.
+
+For browser commands see ?browser or type help when browser is active.
+
+
+# Data wrangling with dplyr
+
+Dplyr is a package which makes data manipulation in R really easy. It is a part of a larger package called **tidyverse**, which consist of several R packages intended to make the use of R for serious data science purposes more efficient. Dpylr is especially useful for data frame (or tibble) manipulation.
+
+The main format of working with data in tidyverse is a **tibble**. This data structure is very smilar to base R's data frame, however it is designed for easier work with other packages in tidyverse and also provides a different, more redable, print output. Let's look at it on our football data set.
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+```
+```{r}
+foot_data <- read.csv("./data/football.csv")
+head(foot_data)
+
+foot_data <- as_tibble(foot_data)
+foot_data
+```
+
+A tibble only shows the first 10 rows of the data set for clarity. Additionally, it only prints as many columns as fit into a page, and lists other columns below. If we wish to see all of the tibble, we can use the `View()` function. Under variable names, a tibble also shows the type of each variable. Looking at the above output we see that Date is coded as a factor, which is not what we want. Therefore we will first transform it into Date format. We have to be careful to provide the function with the proper format.
+
+```{r}
+foot_data$Date <- as.Date(foot_data$Date, format = "%d/%m/%y")
+foot_data
+```
+
+Now that we have our starting data set, we can begin manipulating it. This usually consists of selecting specific rows and columns, and calculating statistics derived from variables in the data frame. Below we describe five functions which will enable us dynamic data set manipulation.
+
+## Filter
+
+The function `filter()` allows us to select rows, based on values of the variables. As input it gets a tibble and the conditions and it outputs a new tibble that consists only of desired rows.
+
+```{r warning=FALSE}
+filter(foot_data, Div == "E0") # English Premier League
+filter(foot_data, Div == "E0", HomeTeam == "Wigan")
+filter(foot_data, Div == "E0", Date >= "2014-07-01")
+```
+
+The conditions in filter are joined with a logical and---all conditions have to be satisfied. If we want to use or, we have to divide them with a pipe |.
+
+```{r}
+filter(foot_data, HomeTeam == "Liverpool" | HomeTeam == "Man United")
+```
+
+Or, the same can be achieved by using the operator %in%.
+
+```{r}
+filter(foot_data, HomeTeam %in% c("Liverpool", "Man United"))
+```
+
+For example, let's say we are interested in doing further analysis on games between the top 6 teams in the EPL. We can construct a new tibble with filter.
+
+```{r}
+top6      <- c("Arsenal", "Chelsea", "Liverpool", "Man City", "Man United", "Tottenham")
+top6_data <- filter(foot_data, HomeTeam %in% top6, AwayTeam %in% top6)
+```
+
+
+## Arrange
+
+Arranging rows by values in colums is also a useful manipulation. For that we can use dyplr's function `arrange()`, which needs a tibble and the variables on which to arrange. If we want a descending arrangement, we have to use `desc()` function.
+
+```{r}
+arrange(top6_data, FTHG)
+arrange(top6_data, desc(FTHG), FTAG)
+```
+
+
+## Select
+In our current data set we have a relatively small number of columns, so working with our tibble is not too slow and complicated. However, we often encounter data sets with large numbers of columns. In such situations, we might want to select a subset of columns. For that we have the `select()` function . The function takes a tibble and the names of the columns which we want to keep.
+
+For example, we could only be interested in dates and the teams that played on a particular day.
+
+```{r}
+select(top6_data, Date, HomeTeam, AwayTeam)
+```
+
+We can also select all columns between two columns with a colon. Using a minus sign will select all columns except the ones in the expression.
+
+```{r}
+select(top6_data, Div:FTAG)
+select(top6_data, -(Div:FTAG))
+```
+
+There are several utility functions that let us select columns based on their names.
+
+```{r}
+select(top6_data, ends_with("Team")) # Only teams
+select(top6_data, starts_with("H")) # Home statistics
+select(top6_data, contains("S")) # Shots
+```
+
+For renaming columns, we can use the `rename()` function. 
+
+```{r}
+rename(top6_data, Division = Div)
+```
+
+For clarity, we will omit some of the variables in our data set.
+
+```{r}
+top6_data <- select(top6_data, -(HF:AR))
+```
+
+
+## Mutate
+
+To create new variables in the data frame, dependent on the existing variables, we can use the `mutate()` function. For example, let's create two new variables, the shooting accuracy for the home and the away team.
+
+```{r}
+mutate(top6_data, Hshot_accu = HST / HS, Ashot_accu = AST / AS)
+```
+
+We see that now the tibble has two new variables. However, since the tibble has too many columns, the default viewing does not show them. To view the new variables, we can omit some columns with the `select()` function.
+
+By using the pipe (`%>%`), we can apply data wrangling tasks sequentially. For example the code below first creates two variables and then selects only the relevant columns. We will talk more about the pipe later, for now we'll only use it to get a better view of our data.
+
+```{r}
+mutate(top6_data, Hshot_accu = HST / HS, Ashot_accu = AST / AS) %>%
+  select(-(FTHG:AST))
+```
+
+We can also use our own functions when creating new variables. For example, let us add a column that shows the winner of the game, and another column which will provide us with the playing season.
+
+```{r}
+get_winner <- function (ht, at, hg, ag) {
+  ht           <- as.character(ht)
+  at           <- as.character(at)
+  out          <- rep("draw", times = length(ht))
+  out[hg > ag] <- ht[hg > ag]
+  out[hg < ag] <- at[hg < ag]
+  return (out)
+}
+top6_data <- mutate(top6_data, Winner = get_winner(HomeTeam, AwayTeam, FTHG, FTAG))
+
+make_season <- function (game_date) {
+  years     <- as.numeric(format(game_date, "%Y"))
+  months    <- as.numeric(format(game_date, "%m"))
+  out       <- rep(0, times = length(years))
+  ind       <- months > 7
+  out[ind]  <- paste0(years[ind], "-", years[ind] + 1)
+  out[!ind] <- paste0(years[!ind] - 1, "-", years[!ind])
+  return(out)
+}
+top6_data <- mutate(top6_data, Season = make_season(Date))
+
+top6_data %>%
+  select(-(FTHG:AST))
+```
+
+We will add a column to our tibble that will show how many points a team has won in each game.
+
+```{r}
+get_points <- function (tm, winner) {
+  out                   <- rep(0, times = length(tm))
+  out[tm == winner]     <- 3
+  out[winner == "draw"] <- 1
+  return (out)
+}
+top6_data <- mutate(top6_data, 
+                    HPoints = get_points(HomeTeam, Winner),
+                    APoints = get_points(AwayTeam, Winner))
+select(top6_data, -(HS:Season))
+```
+
+
+## Summarise
+
+The `summarise()` function aggregates the data according to some aggregations. How data are aggregated is provided with the `group_by()` function. If this is not provieded the data are aggregated over the whole tibble.
+
+```{r}
+summarise(top6_data, HGoals = mean(FTHG), AGoals = mean(FTAG))
+```
+
+We first need to group the data. For example, let us check how many points each of the top 6 teams has accumulated against other teams in the top 6, home and away, in the time between 2010 and 2015.
+
+```{r}
+gdata <- group_by(top6_data, HomeTeam)
+summarise(gdata, Points = sum(HPoints))
+gdata <- group_by(top6_data, AwayTeam)
+summarise(gdata, Points = sum(APoints))
+```
+
+
+## The pipe
+
+To arrive at the above results we made several changes to the original data set. However, we can use the pipe operator to do all these calls sequentially, without creating many additional data sets, or changing the original set.
+
+Let's go a step further and create a tibble, where we will have the accumulated points between the top 6 for each season.
+
+```{r}
+top6_points <- foot_data %>%
+  filter(HomeTeam %in% top6, AwayTeam %in% top6) %>%
+  select(-(HF:AR)) %>%
+  mutate(Winner    = get_winner(HomeTeam, AwayTeam, FTHG, FTAG),
+         HPoints   = get_points(HomeTeam, Winner),
+         APoints   = get_points(AwayTeam, Winner),
+         Season    = make_season(Date))
+```
+
+So far, we have the information about season and accumulated points. Now we need to summarise this data by season and by home/away. Then we will use `full_join` to merge the home and aways point haul. In the end, we will arrange the data by success.
+
+```{r}
+home_points <- top6_points %>%
+  group_by(HomeTeam, Season) %>%
+  summarise(HPoints = sum(HPoints)) %>%
+  rename(Team = HomeTeam)
+
+away_points <- top6_points %>%
+  group_by(AwayTeam, Season) %>%
+  summarise(APoints = sum(APoints)) %>%
+  rename(Team = AwayTeam)
+
+top6_points <- full_join(home_points, away_points) %>%
+  mutate(Points = HPoints + APoints) %>%
+  arrange(desc(Points))
+top6_points
+```
