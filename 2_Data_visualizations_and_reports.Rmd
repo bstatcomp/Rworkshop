@@ -98,7 +98,7 @@ To add a title to the chart we need to use commands for the themes layer. The ap
     theme(plot.title=element_text(hjust=0.5, size=22))
 ```
 
-Aaah ... much better, this chart actually tells us some things. As you can see scatter plots are good for quick exploratory analysis when we are interested in how two variables are related with each other and how data are distributed. It seems like movies that cost more also earn more. We can add additional geoms to get a better feel of this relationship, for example `geom_smooth()` fits a line (straight or curved) to the data. We can also add a reference diagonal line (movies above the line made a profite while those below made a loss), the code below also makes the line a bit thicker, red and dotted. We can also add horizontal or vertical reference lines, for more information about reference lines see https://ggplot2.tidyverse.org/reference/geom_abline.html.
+Aaah ... much better, this chart actually tells us some things. As you can see scatter plots are good for quick exploratory analysis when we are interested in how two variables are related with each other and how data are distributed. It seems like movies that cost more also earn more. We can add additional geoms to get a better feel of this relationship, for example `geom_smooth()` fits a line (straight or curved) to the data. We can also add a reference diagonal line (movies above the line made a profit while those below made a loss), the code below also makes the line a bit thicker, red and dotted. We can also add horizontal or vertical reference lines, for more information about reference lines see https://ggplot2.tidyverse.org/reference/geom_abline.html.
 
 ```{r, warning=FALSE, messages=FALSE}
   # plot
