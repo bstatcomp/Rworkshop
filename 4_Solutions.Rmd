@@ -1,0 +1,168 @@
+---
+title: "Visualizations and reports"
+date: "31/1/2019"
+author: "Jure Demsar and Gregor Pirs"
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    toc: yes
+    highlight: github
+---
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# import required libraries
+library(ggplot2)
+library(dplyr)
+```
+
+<div style="text-align:center">
+  <img src="../bstatcomp.png" alt="drawing" width="128"/>
+</div>
+
+
+# Exercise 1
+
+Read the player_wage.csv data
+(source: https://www.kaggle.com/aishjun/nba-salaries-prediction-in-20172018-season#2017-18_NBA_salary.csv)
+and save it as a tibble. The observations in the
+data set are NBA players, their information (statistics, nationality,...), and
+their wages. For a glossary of NBA terms, see 
+https://www.basketball-reference.com/about/glossary.html.
+
+Peform following tasks:
+
+1. Create a tibble with only Slovenian players.
+2. Create a tibble with all USA players who play for Golden State Warriors (GWS).
+3. Arrange Players first by age, then by salary, both descending.
+4. Create a tibble with columns name, country, draft number, age, and team.
+5. Add a new variable to the data frame, minutes per game (MPG).
+6. Create a tibble with average salary per team descending.
+7. Create a tibble with average salary per country descending,
+8. Create a tibble with players from the USA, summarise the salary per minutes played, grouped by team (use the pipe!).
+9. Perform an exploratory analysis to find out how wages affect win score (WS). Win score is an estimate of the number of wins contributed by a player.
+
+```{r}
+  # load data
+  df_wage <- read.csv("./data/player_wage.csv")
+  wages <- as_tibble(df_wage)
+  
+  # 1
+  filter(wages, NBA_Country == "Slovenia")
+  
+  # 2
+  filter(wages, NBA_Country == "USA", Tm == "GSW")
+  
+  # 3
+  arrange(wages, desc(Age), desc(Salary))
+  
+  # 4
+  select(wages, Player, NBA_Country:Tm)
+  
+  # 5
+  mutate(wages, MPG = MP / G)
+  
+  # 6
+  group_by(wages, Tm) %>%
+    summarise(Team_salary = mean(Salary)) %>%
+    arrange(desc(Team_salary))
+  
+  # 7
+  group_by(wages, NBA_Country) %>%
+    summarise(Country_salary = mean(Salary)) %>%
+    arrange(desc(Country_salary))
+  
+  # 8
+  filter(wages, NBA_Country == "USA") %>%
+    mutate(Salary_per_MP = Salary / MP) %>% 
+    group_by(Tm) %>%
+    summarise(Team_salary_per_MP = mean(Salary_per_MP)) %>%
+    arrange(desc(Team_salary_per_MP))
+  
+  # 9
+  ggplot(data=wages, aes(x=WS, y=Salary)) +
+    geom_smooth(method="lm") +
+    geom_point(stat="identity", alpha=0.2, size=3, shape=16)
+
+```
+
+# Exercise 2
+
+Load the temparture dataset and filter the data to temperatures in Slovenia. Categorize temperature measurements into 6 bins according to the year of the measurement: 1901-1920, 1921-1940, 1941-1960, 1961-1980, 1981-2000, 2001-2015. Use a bar chart to show how temperature moved during these time intervals for each month independenlty (hint: use facet grid).
+
+```{r}
+  # load data
+  df_temperature <- read.csv("./data/temperature.csv", na.strings="", sep=";")
+  temperature <- as_tibble(df_temperature)
+
+  # your solution here
+  si_temperature <- temperature %>%
+    filter(country=="Slovenia")
+  
+  # time_interval
+  si_temperature$time_interval=""
+  
+  for (i in 1:nrow(si_temperature)) {
+    if (si_temperature[i,]$year < 1921) {
+      si_temperature[i,]$time_interval = "1901-1920"
+    } else if (si_temperature[i,]$year < 1941) {
+      si_temperature[i,]$time_interval = "1921-1940"
+    } else if (si_temperature[i,]$year < 1961) {
+      si_temperature[i,]$time_interval = "1941-1960"
+    } else if (si_temperature[i,]$year < 1981) {
+      si_temperature[i,]$time_interval = "1961-1980"
+    } else if (si_temperature[i,]$year < 2001) {
+      si_temperature[i,]$time_interval = "1981-2000"
+    } else {
+      si_temperature[i,]$time_interval = "2001-2015"
+    }
+  }
+  
+  # get averages for Slovenia
+  average_temperature <- si_temperature %>%
+    filter(country=="Slovenia") %>%
+    group_by(time_interval,month) %>%
+    summarize(temperature=mean(temperature))
+  
+  # plot
+  palette <- c("grey70", "grey60", "grey50", "grey40", "grey30", "grey20")
+  ggplot(data=average_temperature, aes(x=time_interval, y=temperature, fill=time_interval)) +
+    geom_bar(stat="identity") +
+    facet_grid(. ~ month) +
+    ylim(-3, 20) +
+    xlab("Month") +
+    ylab("T[°C]") +
+    theme(legend.title=element_blank(),
+          axis.text.x=element_blank(),
+          axis.ticks.x=element_blank()) +
+    scale_fill_manual(values=palette)
+```
+
+
+# Exercise 3
+
+Use exploratory visualizations to analyze how the knowledge of various programming languages, age and programming experience influence developer's salary. Also explore relationships between these variables -- is the number of known programming languages correlated with age, etc. Hint: You can plot each visualization independently or you can use the `cowplot` package to join multiple charts together.
+
+
+```{r}
+  # load data
+  df_salaries <- read.csv("./data/salaries.csv", na.strings="")
+  salaries <- as_tibble(df_salaries) 
+
+  # your solution here
+  # plots
+  ggplot(data=salaries, aes(x=age, y=average_salary)) +
+    geom_point(stat="identity", alpha=0.2, size=5, shape=16, position=position_jitter(width=0.1, height=0.1))
+  
+  ggplot(data=salaries, aes(x=experience, y=average_salary)) +
+    geom_point(stat="identity", alpha=0.2, size=5, shape=16, position=position_jitter(width=0.1, height=0.1))
+  
+  ggplot(data=salaries, aes(x=programming_languages, y=average_salary)) +
+    geom_point(stat="identity", alpha=0.2, size=5, shape=16, position=position_jitter(width=0.1, height=0.1))
+  
+  ggplot(data=salaries, aes(x=age, y=programming_languages)) +
+    geom_point(stat="identity", alpha=0.2, size=5, shape=16, position=position_jitter(width=0.1, height=0.1))
+  
+  ggplot(data=salaries, aes(x=experience, y=programming_languages)) +
+    geom_point(stat="identity", alpha=0.2, size=5, shape=16, position=position_jitter(width=0.1, height=0.1))
+
+```
