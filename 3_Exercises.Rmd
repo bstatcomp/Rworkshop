@@ -26,7 +26,7 @@ https://www.basketball-reference.com/about/glossary.html.
 Peform following tasks:
 
 1. Create a tibble with only Slovenian players.
-2. Create a tibble with all USA players who play for Golden State Warriors (GWS).
+2. Create a tibble with all USA players who play for Golden State Warriors (GSW).
 3. Arrange Players first by age, then by salary, both descending.
 4. Create a tibble with columns name, country, draft number, age, and team.
 5. Add a new variable to the data frame, minutes per game (MPG).
